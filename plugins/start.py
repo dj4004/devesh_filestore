@@ -5,15 +5,16 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, 
 from pyrogram.errors import FloodWait,ChatAdminRequired, UserIsBlocked, InputUserDeactivated
 from bot import Bot
 from config import *
-from helper_func import subscribed, encode, decode, get_messages
+from helper_func import decode, get_messages
 from database.database import add_user, del_user, full_userbase, present_user
+from lazydeveloper.lazy_forcesub import is_subscribed, lazy_force_sub
 logger = logging.getLogger(__name__)
 
 neha_delete_time = FILE_AUTO_DELETE
 neha = neha_delete_time
 file_auto_delete = humanize.naturaldelta(neha)
 
-@Bot.on_message(filters.command('start') & filters.private & subscribed)
+@Bot.on_message(filters.command('start') & filters.private )
 async def start_command(client: Client, message: Message):
     id = message.from_user.id
     if not await present_user(id):
@@ -22,7 +23,10 @@ async def start_command(client: Client, message: Message):
         except Exception as e:
             print(f"Error adding user: {e}")
             pass
-    
+    if (FORCE_SUB_CHANNEL or FORCE_SUB_CHANNEL2) and not await is_subscribed(client, message):
+        # User is not subscribed to any of the required channels, trigger force_sub logic
+        return await lazy_force_sub(client, message)
+        
     text = message.text
     if len(text) > 7:
         try:
@@ -112,44 +116,44 @@ async def start_command(client: Client, message: Message):
         )
         return
 
-@Bot.on_message(filters.command('start') & filters.private)
-async def not_joined(client: Client, message: Message):
-    try:
-        invite_link = await client.create_chat_invite_link(int(FORCE_SUB_CHANNEL), creates_join_request=True)
-        invite_link2 = await client.create_chat_invite_link(int(FORCE_SUB_CHANNEL2), creates_join_request=True)
-    except ChatAdminRequired:
-        logger.error("Hey Sona, Ek dfa check kr lo ki auth Channel mei Add hu ya nhi...!")
-        return
-    buttons = [
-        [
-            InlineKeyboardButton(text="📌ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ1", url=invite_link.invite_link),
-            InlineKeyboardButton(text="📌ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ2", url=invite_link2.invite_link),
-        ]
-    ]
-    try:
-        buttons.append(
-            [
-                InlineKeyboardButton(
-                    text='↺ʀᴇʟᴏᴀᴅ',
-                    url=f"https://t.me/{client.username}?start={message.command[1]}"
-                )
-            ]
-        )
-    except IndexError:
-        pass
+# @Bot.on_message(filters.command('start') & filters.private)
+# async def not_joined(client: Client, message: Message):
+#     try:
+#         invite_link = await client.create_chat_invite_link(int(FORCE_SUB_CHANNEL), creates_join_request=True)
+#         invite_link2 = await client.create_chat_invite_link(int(FORCE_SUB_CHANNEL2), creates_join_request=True)
+#     except ChatAdminRequired:
+#         logger.error("Hey Sona, Ek dfa check kr lo ki auth Channel mei Add hu ya nhi...!")
+#         return
+#     buttons = [
+#         [
+#             InlineKeyboardButton(text="📌ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ1", url=invite_link.invite_link),
+#             InlineKeyboardButton(text="📌ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ2", url=invite_link2.invite_link),
+#         ]
+#     ]
+#     try:
+#         buttons.append(
+#             [
+#                 InlineKeyboardButton(
+#                     text='↺ʀᴇʟᴏᴀᴅ',
+#                     url=f"https://t.me/{client.username}?start={message.command[1]}"
+#                 )
+#             ]
+#         )
+#     except IndexError:
+#         pass
 
-    await message.reply(
-        text=FORCE_MSG.format(
-            first=message.from_user.first_name,
-            last=message.from_user.last_name,
-            username=None if not message.from_user.username else '@' + message.from_user.username,
-            mention=message.from_user.mention,
-            id=message.from_user.id
-        ),
-        reply_markup=InlineKeyboardMarkup(buttons),
-        quote=True,
-        disable_web_page_preview=True
-    )
+#     await message.reply(
+#         text=FORCE_MSG.format(
+#             first=message.from_user.first_name,
+#             last=message.from_user.last_name,
+#             username=None if not message.from_user.username else '@' + message.from_user.username,
+#             mention=message.from_user.mention,
+#             id=message.from_user.id
+#         ),
+#         reply_markup=InlineKeyboardMarkup(buttons),
+#         quote=True,
+#         disable_web_page_preview=True
+#     )
 
 @Bot.on_message(filters.command('users') & filters.private & filters.user(ADMINS))
 async def get_users(client: Bot, message: Message):
