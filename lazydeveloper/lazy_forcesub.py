@@ -40,10 +40,10 @@ async def lazy_force_sub(client: Client, message: Message):
         logger.error("Hey Sona, Ek dfa check kr lo ki auth Channel mei Add hu ya nhi...!")
         return
     buttons = [
-        
+        [
             InlineKeyboardButton(text="📌ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ2", url=invite_link2.invite_link),
             InlineKeyboardButton(text="📌ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ1", url=invite_link.invite_link),
-        
+        ]
     ]
     try:
         buttons.append(
